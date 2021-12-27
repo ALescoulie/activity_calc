@@ -27,11 +27,11 @@ double get_load_factor(unsigned int size, unsigned int capacity) {
 
 int get_hash(char *key) {
     int len = strlen(key);
-    int hash = 0;
-    int i;
+    unsigned int hash = 0;
+    unsigned int i;
 
     for (i = 0; len > i; i++) {
-        hash = hash*31 + *(key + i);
+        hash = hash * 31 + *(key + i);
     }
 
     return hash;
@@ -45,7 +45,7 @@ void table_add(HashTable *table, double value, char *key) {
         table_expand(table);
         table_add(table, value, key);
     }
-    if (table->data[hash % table->capacity].key == 0) {
+    if (table->data[hash % table->capacity].key == 0 || table->data[hash % table->capacity].key == key) {
         table->data[hash % table->capacity].key = key;
         table->data[hash % table->capacity].value = value;
         table->size += 1;
@@ -73,18 +73,24 @@ void table_expand(HashTable* table) {
 
 int table_remove(HashTable* table, char* key) {
     int i = 1;
+    int x = 0;
     int hash = get_hash(key);
     if (table->data[hash % table->capacity].key == key) {
         table->data[hash % table->capacity].key = 0;
         table->size -= 1;
         return 0;
-    } else if (table->data[hash % table->capacity].value != 0) {
-        while (table->data[(hash + i) % table->capacity].key != 0) {
+    } else if (table->data[hash % table->capacity].key != 0) {
+        while (table->data[(hash + i) % table->capacity].key != key && x < table->capacity) {
             i = (i + 1) * (i + 1);
+            x++;
         }
-        table->data[(hash + i) % table->capacity].key = 0;
-        table->size -= 1;
-        return 0;
+        if (table->data[(hash + i) % table->capacity].key == key) {
+            table->data[(hash + i) % table->capacity].key = 0;
+            table->size -= 1;
+            return 0;
+        } else {
+            return 1;
+        }
     } else {
         return 1;
     }
@@ -92,14 +98,20 @@ int table_remove(HashTable* table, char* key) {
 
 double table_get(HashTable* table, char* key) {
     int i = 1;
+    int x = 0;
     int hash = get_hash(key);
     if (table->data[hash % table->capacity].key == key) {
         return table->data[hash % table->capacity].value;
     } else if (table->data[hash % table->capacity].key != 0) {
-        while (table->data[(hash + i) % table->capacity].key != 0) {
+        while (table->data[(hash + i) % table->capacity].key != key && x < table->capacity) {
             i = (i + 1) * (i + 1);
+            x++;
         }
-        return table->data[(hash + i) % table->capacity].value;
+        if (table->data[(hash + i) % table->capacity].key == key) {
+            return table->data[(hash + i) % table->capacity].value;
+        } else {
+            return 1;
+        }
     } else {
         return 1;
     }
